@@ -66,7 +66,6 @@ echo 'Install ack'
 echo '-----------'
 brew install ack
 
-
 echo 'Install some nice quicklook plugins'
 echo '-----------------------------------'
 brew install --cask qlcolorcode qlstephen qlmarkdown quicklook-json qlprettypatch quicklook-csv betterzip  suspicious-package
@@ -98,21 +97,93 @@ echo '-------------'
 brew install mysql
 brew services start mysql
 
-echo 'Install yarn'
-echo '------------'
-brew install yarn
+echo 'Install hyper terminal'
+echo '-------------'
+brew install hyper
+brew install fig
+brew install thefuck
 
-echo 'Install ghostscript'
-echo '-------------------'
-brew install ghostscript
+echo 'Install VS Code'
+echo '--------------'
+brew install --cask visual-studio-code
+
+echo 'Install docker'
+echo '--------------'
+brew install docker
+brew install docker-compose
+
+echo 'Install ray'
+echo '--------------'
+brew install --cask ray
+
+echo 'Install tableplus'
+echo '--------------'
+brew install --cask tableplus
+
+echo 'Install insomnia'
+echo '--------------'
+brew install --cask insomnia
+
+echo 'Install cyberduck'
+echo '--------------'
+brew install --cask cyberduck
 
 echo 'Install mackup'
 echo '--------------'
 brew install mackup
 
+echo 'Install mas'
+echo '--------------'
+brew install mas
+
 echo 'Install zsh-autosuggestions'
 echo '---------------------------'
 brew install zsh-autosuggestions
+
+echo 'Install brave-browser'
+echo '--------------'
+brew install --cask brave-browser
+
+echo 'Install firefox'
+echo '--------------'
+brew install --cask firefox
+
+echo 'Install notion'
+echo '--------------'
+brew install --cask notion
+
+echo 'Install vlc'
+echo '--------------'
+brew install --cask vlc
+
+echo 'Install slack'
+echo '--------------'
+brew install --cask slack
+
+echo 'Install discord'
+echo '--------------'
+brew install --cask discord
+brew install --cask betterdiscord-installer
+
+echo 'Install bettertouchtool'
+echo '--------------'
+brew install --cask bettertouchtool
+
+echo 'Install keyboardcleantool'
+echo '--------------'
+brew install --cask keyboardcleantool
+
+echo 'Install caffeine'
+echo '--------------'
+brew install --cask caffeine
+
+echo 'Install stats'
+echo '--------------'
+brew install --cask stats
+
+echo 'Install folx'
+echo '--------------'
+brew install --cask folx
 
 echo '++++++++++++++++++++++++++++++'
 echo '++++++++++++++++++++++++++++++'
