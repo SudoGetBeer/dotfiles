@@ -1,58 +1,40 @@
-# PHP
-alias phpunit="vendor/bin/phpunit"
-alias phpunitw="phpunit-watcher watch"
-alias a="php artisan"
-alias ar="php artisan remote"
-alias c="composer"
-alias cu="composer update"
-alias cr="composer require"
-alias ci="composer install"
-alias cda="composer dump-autoload -o"
-alias larastan="vendor/bin/phpstan analyse"
-alias hostfile="sudo vi /etc/hosts"
-alias deploy='envoy run deploy'
-alias deploy-code='envoy run deploy-code'
-alias mfs='php artisan migrate:fresh --seed'
-alias nah='git reset --hard;git clean -df'
+# Directories
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias .....="cd ../../../.."
 
-alias pp="php artisan test --parallel"
-alias d="php artisan dusk"
-alias sshconfig="vi ~/.ssh/config"
+# Terminal
+alias zshconfig="code -w ~/.zshrc"
+
+# PHP
+alias hostfile="sudo nano /etc/hosts"
+alias sshconfig="nano ~/.ssh/config"
 alias copykey='command cat ~/.ssh/id_rsa.public | pbcopy'
 alias sail='./vendor/bin/sail'
-alias tunnel='valet share -subdomain=freekmurze -region=eu'
 
-# JavaScript
-alias jest="./node_modules/.bin/jest"
-
-# Git
-alias gc="git checkout"
-alias gpo="git push origin"
-alias gm="git merge"
-alias glog="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
+# Docker
+alias dcup='docker-compose up'
+alias dcupd='docker-compose up -d'
+alias dcdown='docker-compose down'
+alias dcstop='docker-compose stop'
+alias dcexec='docker-compose exec'
+alias dclf="docker-compose logs -ft"
 
 # Fast open
 alias o="open ."
+alias ex="open $1"
 
 # List all files colorized in long format
-alias l="ls -laF"
+alias ll="ls -lahF"
 
-# PhpStorm
-alias phpstorm='open -a /Applications/PhpStorm.app "`pwd`"'
-
-# PHP
-alias switch-php80="brew unlink php@7.4 && brew link --overwrite --force php"
-alias switch-php74="brew unlink php && brew link --overwrite --force php@7.4"
-
-# Redis
-alias flush-redis="redis-cli FLUSHALL"
 
 # VSCode
 alias code='open -a "/Applications/Visual Studio Code.app" "`pwd`"'
 
 # Show/hide hidden files in Finder
-alias show="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
-alias hide="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
+alias fshow="defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
+alias fhide="defaults write com.apple.finder AppleShowAllFiles -bool false && killall Finder"
 
 # IP addresses
 alias ip="curl https://diagnostic.opendns.com/myip ; echo"
@@ -70,13 +52,3 @@ alias emptytrash="sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo 
 
 # Enable aliases to be sudo’ed
 alias sudo='sudo '
-
-# Scape webpage
-alias scrape="scrapeUrl"
-
-# Switch NPM
-alias npmnpm="npm config set registry https://registry.npmjs.org"
-alias npmspatie="npm config set registry https://npm.spatie.be"
-
-# Restart touch bar
-alias touchbar="killall ControlStrip"
