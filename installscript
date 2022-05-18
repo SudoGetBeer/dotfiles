@@ -3,11 +3,6 @@
 # Hide "last login" line when starting a new terminal session
 touch $HOME/.hushlogin
 
-# Install homebrew
-echo 'Install homebrew'
-echo '-----------------'
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
 # Install zsh
 echo 'Install oh-my-zsh'
 echo '-----------------'
@@ -38,8 +33,8 @@ echo '----------------'
 echo install homebrew
 sudo rm -rf /usr/local/Cellar /usr/local/.git && brew cleanup
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/freek/.zprofile
-eval "$(/opt/homebrew/bin/brew shellenv)"
+echo 'eval "$(/usr/local/bin/brew shellenv)"' >> $HOME/.zprofile
+eval "$(/usr/local/bin/brew shellenv)"
 
 echo 'Install python'
 echo '------------'
