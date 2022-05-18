@@ -3,6 +3,11 @@
 # Hide "last login" line when starting a new terminal session
 touch $HOME/.hushlogin
 
+# Install homebrew
+echo 'Install homebrew'
+echo '-----------------'
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
 # Install zsh
 echo 'Install oh-my-zsh'
 echo '-----------------'
@@ -28,12 +33,6 @@ git checkout d6a36b1 agnoster.zsh-theme
 cd ~/.dotfiles/shell
 chmod +x z.sh
 
-echo 'Configure npm'
-echo '-------------'
-# Create a directory for global packages and tell npm where to store globally installed packages
-mkdir "${HOME}/.npm-packages"
-npm config set prefix "${HOME}/.npm-packages"
-
 echo 'Install homebrew'
 echo '----------------'
 echo install homebrew
@@ -42,9 +41,22 @@ sudo rm -rf /usr/local/Cellar /usr/local/.git && brew cleanup
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/freek/.zprofile
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
+echo 'Install python'
+echo '------------'
+brew install python
+brew install coreutils
+pip install powerline-status
+
 echo 'Install node'
 echo '------------'
 brew install node
+brew install npm
+
+echo 'Configure npm'
+echo '-------------'
+# Create a directory for global packages and tell npm where to store globally installed packages
+mkdir "${HOME}/.npm-packages"
+npm config set prefix "${HOME}/.npm-packages"
 
 echo 'Install pkg-config'
 echo '------------------'
