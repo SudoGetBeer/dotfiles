@@ -28,6 +28,8 @@ alias ex="open $1"
 # List all files colorized in long format
 alias ll="ls -lahF"
 
+# Homebrew sugar
+alias brewup='brew update; brew upgrade; brew prune; brew cleanup; brew doctor'
 
 # VSCode
 alias code='open -a "/Applications/Visual Studio Code.app" "`pwd`"'
