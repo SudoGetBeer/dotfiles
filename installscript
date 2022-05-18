@@ -36,6 +36,9 @@ sudo rm -rf /usr/local/Cellar /usr/local/.git && brew cleanup
 echo 'eval "$(/usr/local/bin/brew shellenv)"' >> $HOME/.zprofile
 eval "$(/usr/local/bin/brew shellenv)"
 
+# Disable homebrew automatic post-install cleanup until the end of the script
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+
 echo 'Install python'
 echo '------------'
 brew install python
@@ -191,6 +194,9 @@ brew install --cask stats
 echo 'Install folx'
 echo '--------------'
 brew install --cask folx
+
+# Enable homebrew automatic post-install cleanup
+export HOMEBREW_NO_INSTALL_CLEANUP=0
 
 echo '++++++++++++++++++++++++++++++'
 echo '++++++++++++++++++++++++++++++'
