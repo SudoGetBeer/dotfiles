@@ -52,7 +52,7 @@ export MANPATH="${MANPATH-$(manpath)}:$NPM_PACKAGES/share/man"
 export PATH=$HOME/.dotfiles/bin:$PATH
 
 # Enable zsh-autosuggestions
-source #{HOMEBREW_PREFIX}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source ${HOMEBREW_PREFIX}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # Import ssh keys in keychain
 ssh-add -A 2>/dev/null;
