@@ -15,7 +15,7 @@ DEFAULT_USER=`whoami`
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git laravel4 laravel5 composer macos)
+plugins=(git laravel4 laravel5 composer macos zsh-autosuggestions)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -53,9 +53,6 @@ export PATH=$HOME/.dotfiles/bin:$PATH
 
 # Import ssh keys in keychain
 ssh-add -A 2>/dev/null;
-
-# Enable autosuggestions
-source ~/.dotfiles/misc/oh-my-zsh-custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # Enable thefuck
 eval $(thefuck --alias)
