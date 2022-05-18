@@ -57,6 +57,8 @@ ssh-add -A 2>/dev/null;
 # Enable autosuggestions
 source ~/.dotfiles/misc/oh-my-zsh-custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
+# Enable thefuck
+eval $(thefuck --alias)
 
 # Extra paths
 export PATH="$HOME/.composer/vendor/bin:$PATH"
