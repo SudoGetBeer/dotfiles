@@ -44,6 +44,11 @@ eval "$(/usr/local/bin/brew shellenv)"
 # Disable homebrew automatic post-install cleanup until the end of the script
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 
+echo 'Install fire code font'
+echo '------------'
+brew tap homebrew/cask-fonts
+brew install --cask font-fira-code
+
 echo 'Install python'
 echo '------------'
 brew install python
@@ -124,8 +129,11 @@ brew install --cask visual-studio-code
 
 echo 'Install docker'
 echo '--------------'
-brew install docker
+brew install --cask docker
 brew install docker-compose
+# Link docker-compose
+mkdir -p ~/.docker/cli-plugins
+ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
 
 echo 'Install ray'
 echo '--------------'
