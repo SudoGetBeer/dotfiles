@@ -86,15 +86,25 @@ echo 'Install ack'
 echo '-----------'
 brew install ack
 
+echo 'Install keka'
+echo '-----------'
+brew install --cask keka
+
 echo 'Install some nice quicklook plugins'
 echo '-----------------------------------'
-brew install --cask qlcolorcode qlstephen qlmarkdown quicklook-json qlprettypatch quicklook-csv betterzip  suspicious-package
+brew install --cask qlmarkdown quicklook-json quicklook-csv
+
+echo 'Install redis'
+echo '-----------'
+brew install redis
 
 echo 'Install php'
 echo '-----------'
 brew tap shivammathur/php
-brew install shivammathur/php/php@8.1
-brew link --overwrite --force php@8.1
+brew tap shivammathur/extensions
+brew install shivammathur/php/php@8.2
+brew link --overwrite --force php@8.2
+brew install shivammathur/extensions/redis@8.2
 
 echo 'Install composer'
 echo '----------------'
@@ -112,28 +122,36 @@ rm composer-setup.php
 sudo mkdir /usr/local/bin/
 sudo mv composer.phar /usr/local/bin/composer
 
-echo 'Install mysql'
-echo '-------------'
-brew install mysql
-brew services start mysql
+# echo 'Install mysql'
+# echo '-------------'
+# brew install mysql
+# brew services start mysql
 
-echo 'Install hyper terminal'
+echo 'Install dbngin'
 echo '-------------'
-brew install hyper
-brew install fig
+brew install --cask dbngin
+
+echo 'Install warp'
+echo '-------------'
+brew install --cask warp
 brew install thefuck
+
+# echo 'Install hyper terminal'
+# echo '-------------'
+# brew install hyper
+# brew install fig
 
 echo 'Install VS Code'
 echo '--------------'
 brew install --cask visual-studio-code
 
-echo 'Install docker'
-echo '--------------'
-brew install --cask docker
-brew install docker-compose
-# Link docker-compose
-mkdir -p ~/.docker/cli-plugins
-ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
+# echo 'Install docker'
+# echo '--------------'
+# brew install --cask docker
+# brew install docker-compose
+# # Link docker-compose
+# mkdir -p ~/.docker/cli-plugins
+# ln -sfn /usr/local/opt/docker-compose/bin/docker-compose ~/.docker/cli-plugins/docker-compose
 
 echo 'Install ray'
 echo '--------------'
@@ -151,9 +169,9 @@ echo 'Install cyberduck'
 echo '--------------'
 brew install --cask cyberduck
 
-echo 'Install mackup'
-echo '--------------'
-brew install mackup
+# echo 'Install mackup'
+# echo '--------------'
+# brew install mackup
 
 echo 'Install mas'
 echo '--------------'
@@ -203,6 +221,14 @@ brew install --cask caffeine
 echo 'Install stats'
 echo '--------------'
 brew install --cask stats
+
+echo 'Install aldente'
+echo '--------------'
+brew install --cask aldente
+
+echo 'Install itsycal'
+echo '--------------'
+brew install --cask itsycal
 
 echo 'Install folx'
 echo '--------------'
