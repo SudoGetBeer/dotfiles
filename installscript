@@ -122,24 +122,18 @@ rm composer-setup.php
 sudo mkdir /usr/local/bin/
 sudo mv composer.phar /usr/local/bin/composer
 
-# echo 'Install mysql'
-# echo '-------------'
-# brew install mysql
-# brew services start mysql
+echo 'Install Laravel Valet'
+echo '-------------'
+composer global require laravel/valet
 
 echo 'Install dbngin'
 echo '-------------'
 brew install --cask dbngin
 
-echo 'Install warp'
+echo 'Install warp terminal'
 echo '-------------'
 brew install --cask warp
 brew install thefuck
-
-# echo 'Install hyper terminal'
-# echo '-------------'
-# brew install hyper
-# brew install fig
 
 echo 'Install VS Code'
 echo '--------------'
