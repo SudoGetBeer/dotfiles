@@ -228,6 +228,9 @@ echo 'Install folx'
 echo '--------------'
 brew install --cask folx
 
+brew install menu-bar-splitter
+brew install --cask eqmac
+
 # Enable homebrew automatic post-install cleanup
 export HOMEBREW_NO_INSTALL_CLEANUP=0
 
