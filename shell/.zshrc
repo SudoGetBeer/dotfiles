@@ -96,4 +96,33 @@ export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 export PATH="/usr/local/opt/node@12/bin:$PATH"
 export PATH="/usr/local/opt/imagemagick@6/bin:$PATH"
 if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+<<<<<<< Updated upstream
 export PATH="/opt/homebrew/opt/node@18/bin:$PATH"
+=======
+
+#copilot
+eval "$(github-copilot-cli alias -- "$0")"
+
+# fnm
+export PATH="/Users/$DEFAULT_USER/Library/Application Support/fnm:$PATH"
+eval "`fnm env`"
+
+eval "$(fnm env --use-on-cd)"
+
+# do not update all homebrew stuff automatically
+export HOMEBREW_NO_AUTO_UPDATE=1
+
+
+# Herd injected NVM configuration
+export NVM_DIR="/Users/lars/Library/Application Support/Herd/config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+
+[[ -f "/Applications/Herd.app/Contents/Resources/config/shell/zshrc.zsh" ]] && builtin source "/Applications/Herd.app/Contents/Resources/config/shell/zshrc.zsh"
+
+# Herd injected PHP 8.3 configuration.
+export HERD_PHP_83_INI_SCAN_DIR="/Users/lars/Library/Application Support/Herd/config/php/83/"
+
+
+# Herd injected PHP binary.
+export PATH="/Users/lars/Library/Application Support/Herd/bin/":$PATH
+>>>>>>> Stashed changes
