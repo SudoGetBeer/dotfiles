@@ -96,3 +96,4 @@ export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 export PATH="/usr/local/opt/node@12/bin:$PATH"
 export PATH="/usr/local/opt/imagemagick@6/bin:$PATH"
 if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+export PATH="/opt/homebrew/opt/node@18/bin:$PATH"

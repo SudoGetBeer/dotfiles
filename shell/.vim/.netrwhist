@@ -1,4 +1,5 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =2
+let g:netrw_dirhistcnt =3
+let g:netrw_dirhist_3='/Users/lars/Library/Application Support/Herd'
 let g:netrw_dirhist_2='/Users/lars/.config/valet/Nginx'
 let g:netrw_dirhist_1='/private/etc/sudoers.d'
