@@ -182,7 +182,7 @@ gfhf_resume() {
 
     echo "Resuming merge for $branch"
 
-    gitTag=${branch##*/}$(date +"%Y-%m-%d_%H-%M-%S")
+    #gitTag=${branch##*/}$(date +"%Y-%m-%d_%H-%M-%S")
 
     masterBranch="master"
     if git rev-parse --verify --quiet main >/dev/null; then
@@ -223,8 +223,8 @@ gfhf_resume() {
     fi
 
     # If we've made it this far, both merges were successful
-    git tag -a "$gitTag" -m "$branch"
-    git push --tags
+    #git tag -a "$gitTag" -m "$branch"
+    #git push --tags
 
     # Delete the hotfix branch
     git branch -D "$branch"
