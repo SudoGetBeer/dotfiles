@@ -3,6 +3,9 @@ ZSH=$HOME/.oh-my-zsh
 
 ZSH_CUSTOM=$HOME/.dotfiles/misc/oh-my-zsh-custom
 
+source /opt/homebrew/share/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+
+
 # Set name of the theme to load.
 # Look in ~/.oh-my-zsh/themes/
 # Optionally, if you set this to "random", it'll load a random theme each
@@ -15,7 +18,7 @@ DEFAULT_USER=`whoami`
 # Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
-plugins=(git laravel4 laravel5 composer macos vagrant git-flow-avh gh)
+plugins=(git laravel4 laravel5 composer macos vagrant zsh-autosuggestions zsh-autocomplete git-flow-avh artisan gh)
 
 ARTISAN_OPEN_ON_MAKE_EDITOR=pstorm
 
@@ -96,9 +99,7 @@ export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 export PATH="/usr/local/opt/node@12/bin:$PATH"
 export PATH="/usr/local/opt/imagemagick@6/bin:$PATH"
 if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
-<<<<<<< Updated upstream
 export PATH="/opt/homebrew/opt/node@18/bin:$PATH"
-=======
 
 #copilot
 eval "$(github-copilot-cli alias -- "$0")"
@@ -125,4 +126,3 @@ export HERD_PHP_83_INI_SCAN_DIR="/Users/lars/Library/Application Support/Herd/co
 
 # Herd injected PHP binary.
 export PATH="/Users/lars/Library/Application Support/Herd/bin/":$PATH
->>>>>>> Stashed changes
