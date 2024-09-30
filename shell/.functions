@@ -228,7 +228,7 @@ gfhf_resume() {
 
     # Delete the hotfix branch
     git branch -D "$branch"
-    git push origin --delete "$branch"
+    #git push origin --delete "$branch"
 
     # Remove the temporary file
     rm /tmp/gfhf_last_branch
