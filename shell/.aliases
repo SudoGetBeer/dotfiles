@@ -1,18 +1,17 @@
 # PHP
 alias phpunit="vendor/bin/phpunit"
 alias phpunitw="phpunit-watcher watch"
-alias a="php artisan"
-alias c="COMPOSER_MEMORY_LIMIT=-1 composer"
-alias cu="COMPOSER_MEMORY_LIMIT=-1 composer update"
-alias cr="COMPOSER_MEMORY_LIMIT=-1 composer require"
-alias ci="COMPOSER_MEMORY_LIMIT=-1 composer install"
-alias cda="composer dump-autoload -o"
+alias a='"$(herd which-php)" artisan'
+alias c='COMPOSER_MEMORY_LIMIT=-1 "$(herd which-php)" "$(command -v composer)"'
+alias cu='COMPOSER_MEMORY_LIMIT=-1 "$(herd which-php)" "$(command -v composer)" update'
+alias cr='COMPOSER_MEMORY_LIMIT=-1 "$(herd which-php)" "$(command -v composer)" require'
+alias ci='COMPOSER_MEMORY_LIMIT=-1 "$(herd which-php)" "$(command -v composer)" install'
+alias cda='"$(herd which-php)" "$(command -v composer)" dump-autoload -o'
 alias hostfile="sudo vi /etc/hosts"
 alias deploy='envoy run deploy'
 alias deploy-code='envoy run deploy-code'
 alias mfs='php artisan migrate:fresh --seed'
 alias nah='git reset --hard;git clean -df'
-alias p="phpunit"
 alias pf="phpunit --filter "
 alias d="php artisan dusk"
 alias df="php artisan dusk --filter"
@@ -27,7 +26,99 @@ alias gc="git checkout"
 alias gpo="git push origin"
 alias gm="git merge"
 alias glog="git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit"
-alias gcm="git commit -a -m"
+unalias gcm 2>/dev/null
+
+gcm() {
+	if [[ "$1" == "--ai" || "$1" == "ai" ]]; then
+		shift
+
+		if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+			echo "gcm --ai must be run inside a git repository" >&2
+			return 1
+		fi
+
+		if git diff --quiet HEAD --; then
+			echo "No tracked changes to commit" >&2
+			return 1
+		fi
+
+		local message_file prompt_file editor extra_instructions
+		message_file=$(mktemp /tmp/gcm-message.XXXXXX) || return 1
+		prompt_file=$(mktemp /tmp/gcm-prompt.XXXXXX) || return 1
+		extra_instructions="$*"
+
+		echo "gcm --ai: preparing git diff..."
+
+		{
+			echo "Generate exactly one git commit message for this diff."
+			echo "Use Conventional Commits: <type>(<scope>): <imperative summary>."
+			echo "Keep subject <= 50 chars when possible, hard cap 72."
+			echo "Add a body only when the why is not obvious."
+			echo "Output only the commit message. No markdown, no code fences, no explanations."
+			if [[ -n "$extra_instructions" ]]; then
+				echo
+				echo "Extra instructions: $extra_instructions"
+			fi
+			echo
+			echo "Status:"
+			git status --short
+			echo
+			echo "Diff stat:"
+			git diff --stat HEAD --
+			echo
+			echo "Diff:"
+			git diff --no-ext-diff HEAD --
+		} > "$prompt_file"
+
+		if ! command -v opencode >/dev/null 2>&1; then
+			echo "gcm --ai: opencode not found" >&2
+			rm -f "$prompt_file" "$message_file"
+			return 1
+		fi
+
+		echo "gcm --ai: asking opencode to write commit message..."
+		echo "gcm --ai: this can take a moment; output is saved to $message_file"
+		opencode run --pure \
+			"Read the attached prompt and output only the requested commit message." \
+			--file "$prompt_file" \
+			> "$message_file" || {
+			echo "gcm --ai: opencode failed" >&2
+			rm -f "$prompt_file" "$message_file"
+			return 1
+		}
+
+		echo "gcm --ai: opencode generated:"
+		sed 's/^/  /' "$message_file"
+		echo
+
+		editor="${VISUAL:-${EDITOR:-vi}}"
+		echo "gcm --ai: opening $editor so you can edit the message..."
+		"$editor" "$message_file" || {
+			echo "gcm --ai: editor exited with an error" >&2
+			rm -f "$prompt_file" "$message_file"
+			return 1
+		}
+
+		if [[ ! -s "$message_file" ]]; then
+			echo "gcm --ai: empty commit message, aborting" >&2
+			rm -f "$prompt_file" "$message_file"
+			return 1
+		fi
+
+		echo "gcm --ai: committing with edited message..."
+		git commit -a -F "$message_file"
+		local commit_status=$?
+		if [[ $commit_status -eq 0 ]]; then
+			echo "gcm --ai: commit created"
+		else
+			echo "gcm --ai: git commit failed" >&2
+		fi
+		rm -f "$prompt_file" "$message_file"
+		return $commit_status
+	fi
+
+	git commit -a -m "$*"
+}
 alias gp="git pull --rebase && git push"
 alias gs="git stash"
 # alias pullDM='git fetch && git checkout develop && git pull --rebase && git checkout - && git checkout master && git pull --rebase && git checkout -'

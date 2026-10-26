@@ -1,9 +1,12 @@
 # Run tests
 function p() {
+   local php_bin="$(herd which-php)"
    if [ -f vendor/bin/pest ]; then
-      vendor/bin/pest "$@"
+      local args=("$php_bin" vendor/bin/pest)
+      [[ "$("$php_bin" vendor/bin/pest --version 2>/dev/null)" =~ ([0-9]+)\.[0-9]+\.[0-9]+ ]] && (( ${match[1]:-0} >= 5 )) && { args+=(--tia); echo "Using --tia (Test Impact Analysis)"; }
+      "${args[@]}" "$@"
    else
-      vendor/bin/phpunit "$@"
+      "$php_bin" vendor/bin/phpunit "$@"
    fi
 }
 
@@ -104,8 +107,29 @@ gfrs() {
 #    gc develop
 #    )
 #}
+# Refuse to proceed if a ref name resolves to more than one kind of ref
+# (e.g. a stale tag with the same name as a branch) - git's dwim resolution
+# prefers tags over branches, so an ambiguous name can silently merge/checkout
+# the wrong thing.
+_check_ref_unambiguous() {
+    local name="$1"
+    local matches=()
+    git show-ref --verify --quiet "refs/heads/$name" && matches+=("branch")
+    git show-ref --verify --quiet "refs/tags/$name" && matches+=("tag")
+    if [ ${#matches[@]} -gt 1 ]; then
+        echo "ERROR: '$name' is ambiguous (exists as: ${matches[*]})." >&2
+        echo "Refusing to proceed. Delete or rename the stale ref first, e.g.:" >&2
+        echo "  git tag -d $name" >&2
+        return 1
+    fi
+}
+
 gfhs() {
     ( set -e
+
+    if ! _check_ref_unambiguous "hotfix/$1"; then
+        return 1
+    fi
 
     masterBranch="master"
     if [ `git rev-parse --verify --quiet main` ]
@@ -133,7 +157,11 @@ gfhf() {
     fi
     #gitTag=${branch##*/}$(date +"%Y-%m-%d_%H-%M-%S")
     echo "using on $branch"
-    
+
+    if ! _check_ref_unambiguous "$branch"; then
+        return 1
+    fi
+
     # Save the branch name to a file
     echo "$branch" > /tmp/gfhf_last_branch
 
@@ -145,16 +173,18 @@ gfhf() {
     fi
     git checkout $masterBranch
     git pull
-    if ! git merge $branch
+    if ! git merge "refs/heads/$branch"
     then
+        echo "$masterBranch" > /tmp/gfhf_conflict_stage
         echo "Merge conflict in $masterBranch. Please resolve conflicts and run 'gfhf_resume'."
         return 1
     fi
     # git tag -a $gitTag -m "$branch"
     git checkout develop
     git pull
-    if ! git merge $branch
+    if ! git merge "refs/heads/$branch"
     then
+        echo "develop" > /tmp/gfhf_conflict_stage
         echo "Merge conflict in develop. Please resolve conflicts and run 'gfhf_resume'."
         return 1
     fi
@@ -166,8 +196,8 @@ gfhf() {
     git checkout develop
     git push
     
-    # Remove the temporary file
-    rm /tmp/gfhf_last_branch
+    # Remove the temporary files
+    rm -f /tmp/gfhf_last_branch /tmp/gfhf_conflict_stage
     )
 }
 
@@ -182,6 +212,10 @@ gfhf_resume() {
 
     echo "Resuming merge for $branch"
 
+    if ! _check_ref_unambiguous "$branch"; then
+        return 1
+    fi
+
     #gitTag=${branch##*/}$(date +"%Y-%m-%d_%H-%M-%S")
 
     masterBranch="master"
@@ -190,13 +224,19 @@ gfhf_resume() {
         masterBranch="main"
     fi
 
+    conflict_stage=""
+    if [ -f /tmp/gfhf_conflict_stage ]; then
+        conflict_stage=$(cat /tmp/gfhf_conflict_stage)
+    fi
+
     # Function to handle merge and push
     merge_and_push() {
         local target_branch=$1
         git checkout "$target_branch"
         git pull
-        if ! git merge --no-edit --no-ff "$branch"; then
-            echo "Merge conflict in $target_branch. Please resolve conflicts and run 'git merge --continue'."
+        if ! git merge --no-edit --no-ff "refs/heads/$branch"; then
+            echo "$target_branch" > /tmp/gfhf_conflict_stage
+            echo "Merge conflict in $target_branch. Please resolve conflicts and run 'gfhf_resume'."
             return 1
         fi
         git push
@@ -208,18 +248,30 @@ gfhf_resume() {
         echo "Continuing merge in $current_branch"
         git merge --continue
         git push
+        conflict_stage="$current_branch"
+    fi
+
+    # If conflict was on master/main, still need to merge develop
+    # If conflict was on develop, master was already merged — skip master, just push it
+    if [ "$conflict_stage" = "$masterBranch" ]; then
+        if ! merge_and_push "develop"; then
+            echo "Fix conflicts in develop, then run this function again."
+            return 1
+        fi
+    elif [ "$conflict_stage" = "develop" ]; then
+        # develop just finished; push master which was merged earlier but not pushed
+        git checkout "$masterBranch"
+        git push
     else
-        # If not in a merge state, start with master/main
+        # No conflict state known — run both
         if ! merge_and_push "$masterBranch"; then
             echo "Fix conflicts in $masterBranch, then run this function again."
             return 1
         fi
-    fi
-
-    # Try merging into develop
-    if ! merge_and_push "develop"; then
-        echo "Fix conflicts in develop, then run this function again."
-        return 1
+        if ! merge_and_push "develop"; then
+            echo "Fix conflicts in develop, then run this function again."
+            return 1
+        fi
     fi
 
     # If we've made it this far, both merges were successful
@@ -230,9 +282,10 @@ gfhf_resume() {
     git branch -D "$branch"
     #git push origin --delete "$branch"
 
-    # Remove the temporary file
-    rm /tmp/gfhf_last_branch
+    # Remove the temporary files
+    rm -f /tmp/gfhf_last_branch /tmp/gfhf_conflict_stage
 
+    git checkout develop
     echo "Merge completed successfully. Hotfix branch $branch has been deleted."
     )
 }
@@ -376,3 +429,578 @@ function silent() {
    "$@" >& /dev/null
 }
 
+function _wt_files_match() {
+    local left_file="$1"
+    local right_file="$2"
+
+    if [ ! -f "$left_file" ] || [ ! -f "$right_file" ]; then
+        return 1
+    fi
+
+    cmp -s "$left_file" "$right_file"
+}
+
+function _wt_can_clone_dependencies() {
+    local source_root="$1"
+    local target_root="$2"
+    local dependency_dir="$3"
+
+    case "$dependency_dir" in
+        node_modules)
+            _wt_files_match "$source_root/package.json" "$target_root/package.json" || return 1
+
+            if [ -f "$source_root/package-lock.json" ] || [ -f "$target_root/package-lock.json" ]; then
+                _wt_files_match "$source_root/package-lock.json" "$target_root/package-lock.json" || return 1
+            fi
+
+            if [ -f "$source_root/bun.lock" ] || [ -f "$target_root/bun.lock" ]; then
+                _wt_files_match "$source_root/bun.lock" "$target_root/bun.lock" || return 1
+            fi
+
+            if [ -f "$source_root/pnpm-lock.yaml" ] || [ -f "$target_root/pnpm-lock.yaml" ]; then
+                _wt_files_match "$source_root/pnpm-lock.yaml" "$target_root/pnpm-lock.yaml" || return 1
+            fi
+
+            if [ -f "$source_root/yarn.lock" ] || [ -f "$target_root/yarn.lock" ]; then
+                _wt_files_match "$source_root/yarn.lock" "$target_root/yarn.lock" || return 1
+            fi
+            ;;
+        vendor)
+            _wt_files_match "$source_root/composer.json" "$target_root/composer.json" || return 1
+
+            if [ -f "$source_root/composer.lock" ] || [ -f "$target_root/composer.lock" ]; then
+                _wt_files_match "$source_root/composer.lock" "$target_root/composer.lock" || return 1
+            fi
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+
+    return 0
+}
+
+function _wt_clone_dependency_dir() {
+    local source_root="$1"
+    local target_root="$2"
+    local dependency_dir="$3"
+
+    if [ ! -d "$source_root/$dependency_dir" ] || [ -e "$target_root/$dependency_dir" ]; then
+        return 1
+    fi
+
+    if ! _wt_can_clone_dependencies "$source_root" "$target_root" "$dependency_dir"; then
+        return 1
+    fi
+
+    echo "Cloning $dependency_dir with APFS CoW..."
+    cp -cR "$source_root/$dependency_dir" "$target_root/"
+}
+
+function _wt_seed_dependencies() {
+    local source_root="$1"
+    local target_root="$2"
+
+    _wt_clone_dependency_dir "$source_root" "$target_root" "vendor"
+    _wt_clone_dependency_dir "$source_root" "$target_root" "node_modules"
+}
+
+# Legacy worktree helpers kept for reference after migrating to Worktrunk.
+: <<'WORKTRUNK_LEGACY'
+
+# Laravel Worktree with Herd integration
+# Usage: wt <branch-name>
+function wt() {
+    if [ -z "$1" ]; then
+        echo "Usage: wt <branch-name>"
+        echo "Example: wt feature/user-auth"
+        return 1
+    fi
+
+    local branch_name="$1"
+    local sanitized_name="${branch_name//\//-}"
+    local project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    if [ -z "$project_root" ]; then
+        echo "Error: Not in a git repository"
+        return 1
+    fi
+
+    local project_name=$(basename "$project_root")
+    local worktree_path="$project_root/.worktrees/$sanitized_name"
+    local herd_name="${sanitized_name}.${project_name}"
+    local site_url="http://${herd_name}.test"
+
+    echo "Setting up worktree for: $branch_name"
+    echo "  Path: $worktree_path"
+    echo "  URL:  $site_url"
+    echo ""
+
+    # Create worktree
+    if [ -d "$worktree_path" ]; then
+        echo "Worktree already exists at $worktree_path"
+        echo "Switching to it..."
+        cd "$worktree_path"
+    else
+        echo "Creating worktree..."
+        git worktree add "$worktree_path" -b "$branch_name" 2>/dev/null || \
+        git worktree add "$worktree_path" "$branch_name"
+        cd "$worktree_path"
+    fi
+
+    _wt_seed_dependencies "$project_root" "$worktree_path"
+
+    # Link with Herd
+    echo "Linking with Laravel Herd..."
+    herd link "$herd_name"
+
+    # Copy and configure .env
+    if [ ! -f .env ] && [ -f "$project_root/.env" ]; then
+        echo "Copying .env from main project..."
+        cp "$project_root/.env" .env
+    fi
+
+    if [ -f .env ]; then
+        echo "Configuring .env..."
+        sed -i '' "s|APP_URL=.*|APP_URL=$site_url|" .env
+        sed -i '' "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=${herd_name}.test|" .env
+
+        # Add worktree domain to SANCTUM_STATEFUL_DOMAINS if it exists
+        if grep -q "SANCTUM_STATEFUL_DOMAINS" .env; then
+            local current_domains=$(grep "SANCTUM_STATEFUL_DOMAINS=" .env | cut -d '=' -f2)
+            if [[ ! "$current_domains" == *"${herd_name}.test"* ]]; then
+                sed -i '' "s|SANCTUM_STATEFUL_DOMAINS=\(.*\)|SANCTUM_STATEFUL_DOMAINS=\1,${herd_name}.test|" .env
+            fi
+        fi
+
+        # Ensure secure cookies are disabled for HTTP
+        if grep -q "SESSION_SECURE_COOKIE" .env; then
+            sed -i '' "s|SESSION_SECURE_COOKIE=.*|SESSION_SECURE_COOKIE=false|" .env
+        else
+            echo "SESSION_SECURE_COOKIE=false" >> .env
+        fi
+    fi
+
+    # Install dependencies only when cloning did not populate them
+    echo ""
+    echo "Checking dependencies..."
+
+    if [ -f composer.json ] && [ ! -d vendor ]; then
+        echo "Running composer install..."
+        composer install --no-interaction
+    fi
+
+    if [ -f package.json ] && [ ! -d node_modules ]; then
+        echo "Running npm install..."
+        npm install
+    fi
+
+    # Clear Laravel caches
+    if [ -f artisan ]; then
+        echo "Clearing Laravel caches..."
+        php artisan config:clear 2>/dev/null
+        php artisan cache:clear 2>/dev/null
+    fi
+
+    echo ""
+    echo "Worktree setup complete!"
+    echo ""
+    echo "Site URL: $site_url"
+    echo "Path: $worktree_path"
+    echo ""
+    echo "To start Vite dev server, run: npm run dev"
+    echo "When finished, run: wt-finish"
+}
+
+# Finish/cleanup a Laravel worktree
+# Usage: wt-finish [branch-name]
+function wt-finish() {
+    local project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    if [ -z "$project_root" ]; then
+        echo "Error: Not in a git repository"
+        return 1
+    fi
+
+    # Check if we're in a worktree
+    local git_dir=$(git rev-parse --git-dir 2>/dev/null)
+    local in_worktree=false
+    local current_worktree=""
+    local current_branch=""
+
+    if [[ "$git_dir" == *".worktrees"* ]]; then
+        in_worktree=true
+        current_worktree="$project_root"
+        current_branch=$(git rev-parse --abbrev-ref HEAD)
+    fi
+
+    # List existing worktrees
+    echo "Current worktrees:"
+    git worktree list
+    echo ""
+
+    if [ "$in_worktree" = true ]; then
+        echo "You are currently in worktree: $current_branch"
+        echo ""
+    fi
+
+    # Ask what to do
+    echo "What would you like to do?"
+    echo "  1) Create PR from worktree"
+    echo "  2) Abandon and remove worktree"
+    echo "  3) Cancel"
+    echo ""
+    read "choice?Choose [1-3]: "
+
+    case $choice in
+        1)
+            wt-pr
+            ;;
+        2)
+            if [ "$in_worktree" = true ]; then
+                wt-remove "$current_branch"
+            else
+                echo -n "Enter branch name to remove: "
+                read branch_to_remove
+                wt-remove "$branch_to_remove"
+            fi
+            ;;
+        3)
+            echo "Cancelled."
+            ;;
+        *)
+            echo "Invalid choice."
+            ;;
+    esac
+}
+
+# Create PR from current worktree
+function wt-pr() {
+    local branch=$(git rev-parse --abbrev-ref HEAD)
+    local sanitized_name="${branch//\//-}"
+
+    # Check for uncommitted changes
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "You have uncommitted changes."
+        echo -n "Commit message (or 'skip' to skip): "
+        read commit_msg
+
+        if [ "$commit_msg" != "skip" ]; then
+            git add -A
+            git commit -m "$commit_msg"
+        fi
+    fi
+
+    # Push branch
+    echo "Pushing branch..."
+    git push -u origin "$branch"
+
+    # Detect default branch
+    local default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    if [ -z "$default_branch" ]; then
+        default_branch="develop"
+    fi
+
+    # Create PR
+    echo ""
+    echo -n "PR title (default: $branch): "
+    read pr_title
+    pr_title="${pr_title:-$branch}"
+
+    echo "Creating PR..."
+    gh pr create --base "$default_branch" --title "$pr_title" --body ""
+
+    echo ""
+    echo "PR created! After merge, run: wt-remove $branch"
+}
+
+# Remove a worktree and its Herd link
+# Usage: wt-remove <branch-name>
+function wt-remove() {
+    if [ -z "$1" ]; then
+        echo "Usage: wt-remove <branch-name>"
+        return 1
+    fi
+
+    local branch_name="$1"
+    local sanitized_name="${branch_name//\//-}"
+
+    # Find the main project root (not worktree root)
+    local current_dir=$(pwd)
+    local main_project_root=""
+
+    # Check if we're in a worktree
+    local git_dir=$(git rev-parse --git-dir 2>/dev/null)
+    if [[ "$git_dir" == *".worktrees"* ]]; then
+        # We're in a worktree, get the main project path
+        main_project_root=$(git rev-parse --git-common-dir | sed 's|/.git$||')
+        echo "Switching to main project..."
+        cd "$main_project_root"
+    else
+        main_project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+    fi
+
+    local project_name=$(basename "$main_project_root")
+    local herd_name="${sanitized_name}.${project_name}"
+    local worktree_path="$main_project_root/.worktrees/$sanitized_name"
+
+    echo "Removing worktree: $branch_name"
+    echo "  Path: $worktree_path"
+    echo "  Herd site: ${herd_name}.test"
+    echo ""
+
+    # Kill Vite if running
+    pkill -f "node.*vite.*$sanitized_name" 2>/dev/null
+
+    # Unlink from Herd
+    echo "Unlinking from Herd..."
+    herd unlink "$herd_name" 2>/dev/null
+
+    # Remove worktree
+    if [ -d "$worktree_path" ]; then
+        echo "Removing worktree..."
+        git worktree remove "$worktree_path" --force 2>/dev/null || rm -rf "$worktree_path"
+    fi
+
+    # Delete local branch
+    echo "Deleting local branch..."
+    git branch -D "$branch_name" 2>/dev/null
+
+    echo ""
+    echo "Worktree removed!"
+}
+
+# List all worktrees
+function wt-list() {
+    echo "Current worktrees:"
+    git worktree list
+}
+
+# Create a hotfix worktree (branches from main/master)
+# Usage: wt-hotfix <hotfix-name>
+function wt-hotfix() {
+    if [ -z "$1" ]; then
+        echo "Usage: wt-hotfix <hotfix-name>"
+        echo "Example: wt-hotfix fix-login-bug"
+        return 1
+    fi
+
+    local hotfix_name="$1"
+    local branch_name="hotfix/$hotfix_name"
+    local sanitized_name="hotfix-${hotfix_name}"
+    local project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+
+    if [ -z "$project_root" ]; then
+        echo "Error: Not in a git repository"
+        return 1
+    fi
+
+    local project_name=$(basename "$project_root")
+
+    # Determine main branch (main or master)
+    local main_branch="master"
+    if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+        main_branch="main"
+    fi
+
+    local worktree_path="$project_root/.worktrees/$sanitized_name"
+    local herd_name="${sanitized_name}.${project_name}"
+    local site_url="http://${herd_name}.test"
+
+    echo "Setting up hotfix worktree: $branch_name"
+    echo "  Base branch: $main_branch"
+    echo "  Path: $worktree_path"
+    echo "  URL:  $site_url"
+    echo ""
+
+    # Fetch latest
+    echo "Fetching latest..."
+    git fetch origin "$main_branch"
+
+    # Create worktree from main/master
+    if [ -d "$worktree_path" ]; then
+        echo "Worktree already exists at $worktree_path"
+        echo "Switching to it..."
+        cd "$worktree_path"
+    else
+        echo "Creating worktree from $main_branch..."
+        git worktree add "$worktree_path" -b "$branch_name" "origin/$main_branch"
+        cd "$worktree_path"
+    fi
+
+    _wt_seed_dependencies "$project_root" "$worktree_path"
+
+    # Link with Herd
+    echo "Linking with Laravel Herd..."
+    herd link "$herd_name"
+
+    # Copy and configure .env
+    if [ ! -f .env ] && [ -f "$project_root/.env" ]; then
+        echo "Copying .env from main project..."
+        cp "$project_root/.env" .env
+    fi
+
+    if [ -f .env ]; then
+        echo "Configuring .env..."
+        sed -i '' "s|APP_URL=.*|APP_URL=$site_url|" .env
+        sed -i '' "s|SESSION_DOMAIN=.*|SESSION_DOMAIN=${herd_name}.test|" .env
+
+        if grep -q "SANCTUM_STATEFUL_DOMAINS" .env; then
+            local current_domains=$(grep "SANCTUM_STATEFUL_DOMAINS=" .env | cut -d '=' -f2)
+            if [[ ! "$current_domains" == *"${herd_name}.test"* ]]; then
+                sed -i '' "s|SANCTUM_STATEFUL_DOMAINS=\(.*\)|SANCTUM_STATEFUL_DOMAINS=\1,${herd_name}.test|" .env
+            fi
+        fi
+
+        if grep -q "SESSION_SECURE_COOKIE" .env; then
+            sed -i '' "s|SESSION_SECURE_COOKIE=.*|SESSION_SECURE_COOKIE=false|" .env
+        else
+            echo "SESSION_SECURE_COOKIE=false" >> .env
+        fi
+    fi
+
+    # Install dependencies only when cloning did not populate them
+    echo ""
+    echo "Checking dependencies..."
+
+    if [ -f composer.json ] && [ ! -d vendor ]; then
+        echo "Running composer install..."
+        composer install --no-interaction
+    fi
+
+    if [ -f package.json ] && [ ! -d node_modules ]; then
+        echo "Running npm install..."
+        npm install
+    fi
+
+    # Clear Laravel caches
+    if [ -f artisan ]; then
+        echo "Clearing Laravel caches..."
+        php artisan config:clear 2>/dev/null
+        php artisan cache:clear 2>/dev/null
+    fi
+
+    echo ""
+    echo "Hotfix worktree ready!"
+    echo ""
+    echo "Site URL: $site_url"
+    echo "Path: $worktree_path"
+    echo ""
+    echo "To start Vite dev server, run: npm run dev"
+    echo "When finished, run: wt-hotfix-finish"
+}
+
+# Finish hotfix: merge to main and develop, then cleanup
+# Usage: wt-hotfix-finish
+function wt-hotfix-finish() {
+    ( set -e
+
+    # Check if we're in a hotfix worktree
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [[ ! "$current_branch" == hotfix/* ]]; then
+        echo "Error: Not on a hotfix branch (current: $current_branch)"
+        echo "Expected branch starting with 'hotfix/'"
+        return 1
+    fi
+
+    local hotfix_name="${current_branch#hotfix/}"
+    local sanitized_name="hotfix-${hotfix_name}"
+
+    # Get main project root
+    local git_common_dir=$(git rev-parse --git-common-dir)
+    local main_project_root="${git_common_dir%/.git}"
+    local project_name=$(basename "$main_project_root")
+    local herd_name="${sanitized_name}.${project_name}"
+    local worktree_path="$main_project_root/.worktrees/$sanitized_name"
+
+    # Determine main branch
+    local main_branch="master"
+    if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+        main_branch="main"
+    fi
+
+    echo "Finishing hotfix: $current_branch"
+    echo "  Will merge to: $main_branch and develop"
+    echo ""
+
+    # Check for uncommitted changes
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "You have uncommitted changes."
+        echo -n "Commit message: "
+        read commit_msg
+
+        if [ -z "$commit_msg" ]; then
+            echo "Commit message required."
+            return 1
+        fi
+
+        git add -A
+        git commit -m "$commit_msg"
+    fi
+
+    # Push hotfix branch
+    echo "Pushing hotfix branch..."
+    git push -u origin "$current_branch"
+
+    # Kill Vite if running
+    pkill -f "node.*vite.*$sanitized_name" 2>/dev/null || true
+
+    # Unlink from Herd
+    echo "Unlinking from Herd..."
+    herd unlink "$herd_name" 2>/dev/null || true
+
+    # Remove worktree BEFORE switching (avoids .worktrees showing as changed)
+    echo "Removing worktree..."
+    cd "$main_project_root"
+    if [ -d "$worktree_path" ]; then
+        git worktree remove "$worktree_path" --force 2>/dev/null || rm -rf "$worktree_path"
+    fi
+
+    # Stash any local changes in main project
+    local stashed=false
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Stashing local changes in main project..."
+        git stash push -m "wt-hotfix-finish auto-stash"
+        stashed=true
+    fi
+
+    # Fetch latest
+    git fetch origin
+
+    # Merge to main
+    echo ""
+    echo "Merging to $main_branch..."
+    git checkout "$main_branch"
+    git pull origin "$main_branch"
+    git merge "origin/$current_branch" --no-ff -m "Merge $current_branch into $main_branch"
+    git push origin "$main_branch"
+
+    # Merge to develop
+    echo ""
+    echo "Merging to develop..."
+    git checkout develop
+    git pull origin develop
+    git merge "origin/$current_branch" --no-ff -m "Merge $current_branch into develop"
+    git push origin develop
+
+    # Restore stashed changes
+    if [ "$stashed" = true ]; then
+        echo ""
+        echo "Restoring stashed changes..."
+        git stash pop
+    fi
+
+    # Delete local and remote branch
+    echo ""
+    echo "Cleaning up branches..."
+    git branch -D "$current_branch" 2>/dev/null || true
+    git push origin --delete "$current_branch" 2>/dev/null || true
+
+    echo ""
+    echo "Hotfix complete!"
+    echo "  Merged to: $main_branch and develop"
+    echo "  Branch deleted: $current_branch"
+    )
+}
+
+WORKTRUNK_LEGACY
