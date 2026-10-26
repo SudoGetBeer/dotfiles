@@ -1,7 +1,6 @@
 tap "abue-ammar/tinycast", trusted: true
 tap "atlassian/acli", trusted: true
 tap "eugene1g/safehouse", trusted: true
-tap "homebrew/services"
 tap "loriage/tap", trusted: { casks: ["beszelbar"] }
 tap "powershell/tap"
 tap "steipete/tap"
@@ -199,7 +198,7 @@ cask "timemator"
 cask "tinkerwell"
 cask "transmit"
 cask "zed"
-cask "zen-browser"
+cask "zen"
 cask "zoom"
 brew "atuin"
 brew "atlassian/acli/acli"
