@@ -1,6 +1,6 @@
 tap "abue-ammar/tinycast", trusted: true
-tap "atlassian/acli"
-tap "eugene1g/safehouse"
+tap "atlassian/acli", trusted: true
+tap "eugene1g/safehouse", trusted: true
 tap "homebrew/services"
 tap "loriage/tap", trusted: { casks: ["beszelbar"] }
 tap "powershell/tap"
@@ -185,17 +185,9 @@ cask "figma"
 cask "firefox"
 cask "fluidvoice"
 cask "ghostty"
-cask "helium"
 cask "hyperkey"
 cask "keepassxc"
-cask "microsoft-excel"
-cask "microsoft-onenote"
-cask "microsoft-outlook"
-cask "microsoft-powerpoint"
-cask "microsoft-teams"
-cask "microsoft-word"
 cask "orbstack"
-cask "orca"
 cask "proton-pass"
 cask "rapidapi"
 cask "rustdesk"
