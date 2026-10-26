@@ -1,14 +1,14 @@
 tap "abue-ammar/tinycast", trusted: true
 tap "airbytehq/tap"
-tap "amir20/dtop"
+tap "amir20/dtop", trusted: { casks: ["dtop"] }
 tap "atlassian/acli"
 tap "coollabsio/jean"
-tap "crmne/tap", trusted: { casks: ["fastpotify"] }
+tap "crmne/tap", trusted: { casks: ["fastpotify", "spotifast"] }
 tap "eugene1g/safehouse"
 tap "homebrew/services"
 tap "kamillobinski/thock"
-tap "laradumps/app"
-tap "loriage/tap"
+tap "laradumps/app", trusted: { casks: ["laradumps"] }
+tap "loriage/tap", trusted: { casks: ["beszelbar"] }
 tap "nkzw-tech/tap", trusted: { casks: ["codiff"] }
 tap "powershell/tap"
 tap "shivammathur/extensions"
@@ -190,7 +190,6 @@ cask "qlstephen"
 # Quick Look plugin for CSV files
 cask "quicklook-csv"
 # Quick Look plugin for JSON files
-cask "quicklook-json"
 # Control your tools with a few keystrokes
 cask "raycast"
 # Move and resize windows using keyboard shortcuts or snap areas
@@ -220,7 +219,6 @@ cask "whatsapp"
 # OpenJDK distribution from Azul
 cask "zulu@17"
 uv "claude-swap"
-npm "corepack"
 cask "affinity"
 cask "bettermouse"
 cask "bruno"
