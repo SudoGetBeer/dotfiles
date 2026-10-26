@@ -150,9 +150,9 @@ esac
 # Herd injected PHP 8.4 configuration.
 export HERD_PHP_84_INI_SCAN_DIR="/Users/lars/Library/Application Support/Herd/config/php/84/"
 
-. "$HOME/.atuin/bin/env"
+[ -f "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
 
-eval "$(atuin init zsh)"
+command -v atuin >/dev/null && eval "$(atuin init zsh)"
 export PATH="$HOME/.spin/bin:$PATH"
 
 # Added by Windsurf
